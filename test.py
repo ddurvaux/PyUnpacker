@@ -1,21 +1,27 @@
 #
 # !! TEST FILE for raw pieces of code !!
 #
+#
+# PEiD DB signatures:
+#   http://handlers.sans.org/jclausing/userdb.txt
 __author__ = 'David DURVAUX'
 __contact__ = 'david@autopsit.org'
 
 # IMPORTS
 import pefile
-
+import peutils
+from radare import *
 
 # SETTINGS
 #binfile = "./demo/36a209a7d15d5d719d6072f45e4e3b46"
 binfile = "./demo/upx.exe"
+signatures = peutils.SignatureDatabase('./peid/UserDB.TXT')
+
+# load binary
+pe = pefile.PE(binfile)
 
 # CHECK BINARY SECTIONS
 def analyzeSections():
-	# load binary
-	pe = pefile.PE(binfile)
 
 	# check section + boundary and see if it matches
 	page_size = 0x1000
@@ -55,6 +61,12 @@ def analyzeSections():
 	print "TOTAL PACKED SCORE: %s" % packed_score
 	return
 
+def callPEiD():
+	matches = signatures.match(pe, ep_only = True)
+	if(len(matches) > 0):
+		print "PACKER FOUND: %s" % matches[0]
+	return
+
 # GRAPH ANALYSIS
 # Search leaf of graphs for JMP
 def analyzeCallGraph():
@@ -62,6 +74,7 @@ def analyzeCallGraph():
 
 # MAIN
 analyzeSections()
+callPEiD()
 analyzeCallGraph()
 
 
