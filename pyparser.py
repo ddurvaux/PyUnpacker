@@ -10,6 +10,9 @@ import os
 import pefile
 import peutils
 
+# TODO - set this as a CLI parameter
+signatures = peutils.SignatureDatabase('./peid/UserDB.TXT')
+
 # --------------------------------------------------------------------------- #
 # STATIC ANALYSIS OF BINARY
 # --------------------------------------------------------------------------- #
@@ -71,6 +74,15 @@ class StaticAnalysis:
 		print "TOTAL PACKED SCORE: %s" % self.packed_score
 		return
 
+	def callPEiD(self, signatures):
+		"""
+			Use set of YARA rules to search for known packers
+		"""
+		matches = signatures.match(self.pe, ep_only = True)
+		if(len(matches) > 0):
+			print "PACKER FOUND: %s" % matches[0]
+		return
+
 
 # --------------------------------------------------------------------------- #
 # MAIN SECTION OF CODE
@@ -78,6 +90,7 @@ class StaticAnalysis:
 def start_analysis(binary):
 	sa = StaticAnalysis(binary)
 	sa.analyzeSections()
+	sa.callPEiD(signatures)
 	return
 
 def main():
