@@ -1,17 +1,62 @@
 #!/usr/bin/python
 #
+# This tool is an attempt to automate some taks related
+# to malware unpacking.
+#
+# Most (if not all) of the tricks used in this tool 
+# directly comes from an excellent course given
+# by Nicolas Brulez (@nicolasbrulez)
+#
+# Tool developped by David DURVAUX for Autopsit
+# (commercial brand of N-Labs sprl)
+#
+# TODO
+#  - everything
+#  - VirusTotal Support
+#  - dynamic analysis (GDB? Valgring?)
+#  - static code analysis with Radare2
+#  - ..
 #
 __author__ = 'David DURVAUX'
 __contact__ = 'david@autopsit.org'
+__version__ = '0.01'
 
 # Imports required by this tool
 import argparse
 import os
 import pefile
 import peutils
+import sys
 
 # TODO - set this as a CLI parameter
-signatures = peutils.SignatureDatabase('./peid/UserDB.TXT')
+# DB downloaded on
+# https://raw.githubusercontent.com/viper-framework/viper/master/data/peid/UserDB.TXT
+signatures = peutils.SignatureDatabase('./peid/peid.txt')
+
+# --------------------------------------------------------------------------- #
+# REPRESENTATION OF THE INFO RETRIEVED
+# --------------------------------------------------------------------------- #
+class BinaryInformations:
+	"""
+		This class will represent and hold all the information
+		retrieved from the binary
+	"""
+	vtinfo = {}
+	peheader = {}
+	bininfo = {}
+	settings = {}
+	packed_score = 0 # current packed score
+	packed_test = 0  # number of test done
+
+	def __init__(self):
+		return
+
+	def log(self):
+		#TODO IMPLEMENT
+		return
+
+	def save(self, filename=sys.stdout):
+		return
 
 # --------------------------------------------------------------------------- #
 # STATIC ANALYSIS OF BINARY
@@ -24,9 +69,10 @@ class StaticAnalysis:
 	"""
 	# class variables
 	binary = None
-	page_size = 0x1000
-	margin=0.1
-	entropy_threshold = 7.0
+	bininfo = None
+	page_size = 0
+	margin= 0
+	entropy_threshold = 0
 	packed_score = 0
 
 	SFLAGS = {
@@ -38,12 +84,29 @@ class StaticAnalysis:
 		# other: check https://msdn.microsoft.com/en-us/library/ms809762.aspx
 	}
 
-	def __init__(self, binary):
+	def __init__(self, binary, page_size=0x1000, margin=0.1, entropy_threshold = 7.0, packed_score=0):
 		"""
 			binary the path to the binary to analyze
 		"""
+		# set parameters
 		self.binary = binary
+		self.page_size = page_size
+		self.margin =  margin
+		self.entropy_threshold = entropy_threshold
+		self.packed_score = packed_score
+
+		# instanciate internal objects
 		self.pe = pefile.PE(binary)
+		self.bininfo = BinaryInformations()
+
+		# update BinaryInformation with current settings:
+		self.bininfo.settings["peanalysis"] = {
+			"binary" : self.binary,
+			"page_size" : self.page_size,
+			"margin" : self.margin,
+			"entropy_threshold" : self.entropy_threshold,
+			"packed_score" : self.packed_score
+		}
 
 	# CHECK BINARY SECTIONS
 	def analyzeSections(self):
@@ -57,31 +120,35 @@ class StaticAnalysis:
 			# check flags
 			if( int(flags ^ (self.SFLAGS["EXEC"] | self.SFLAGS["WRIT"])) == 0 ): # check if section is executable + writeable
 				print "ABNOMALIE SECTION SHOULD NOT BE WRITEABLE AND EXECUTABLE (W^X violation)!!"
-				self.packed_score += 1
+				self.bininfo.packed_score += 1
 
 			# check sections sizes (incl. page alignment)
 			# the rsize need to be written in a multiple of memory page size (min 1.)
 			# a margin is added (could be customized)
 			if (rsize / self.page_size + 1) * self.page_size * (1 + self.margin) < vsize:
 				print "ABNOMALIES with VIRTUAL SIZE ALLOCATION for SECTION: %s" % name  
-				self.packed_score += 1
+				self.bininfo.packed_score += 1
 
 			# check entropy
 			if(section.get_entropy() >= self.entropy_threshold):
 				print "ABNORMAL ENTROPY (%s)) for SECTION: %s" % (section.get_entropy(), name)	
-				self.packed_score += 1
+				self.bininfo.packed_score += 1
 
-		print "TOTAL PACKED SCORE: %s" % self.packed_score
-		return
+			# update bininfo status
+			self.bininfo.packed_test += 3 # 3 tests are done for each section
+
+		print "TOTAL PACKED SCORE: %s" % self.bininfo.packed_score
+		return self.bininfo
 
 	def callPEiD(self, signatures):
 		"""
 			Use set of YARA rules to search for known packers
 		"""
 		matches = signatures.match(self.pe, ep_only = True)
-		if(len(matches) > 0):
-			print "PACKER FOUND: %s" % matches[0]
-		return
+		if(matches is not None):
+			if(len(matches) > 0):
+				print "PACKER FOUND: %s" % matches[0]
+		return self.bininfo
 
 
 # --------------------------------------------------------------------------- #
