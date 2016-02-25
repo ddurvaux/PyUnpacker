@@ -27,11 +27,14 @@ import os
 import pefile
 import peutils
 import sys
+import distorm3
 
 # TODO - set this as a CLI parameter
 # DB downloaded on
-# https://raw.githubusercontent.com/viper-framework/viper/master/data/peid/UserDB.TXT
-signatures = peutils.SignatureDatabase('./peid/peid.txt')
+# https://raw.githubusercontent.com/viper-framework/viper/master/data/peid/UserDB.TXT (UPX not detected)
+# https://raw.githubusercontent.com/ynadji/peid/master/userdb.txt (problems)
+# http://blog.didierstevens.com/programs/yara-rules/
+signatures = peutils.SignatureDatabase('./peid/peid-userdb-rules-with-pe-module.yara')
 
 # --------------------------------------------------------------------------- #
 # REPRESENTATION OF THE INFO RETRIEVED
@@ -143,6 +146,8 @@ class StaticAnalysis:
 	def callPEiD(self, signatures):
 		"""
 			Use set of YARA rules to search for known packers
+
+			TODO - add a check on signature presence or download or end
 		"""
 		matches = signatures.match(self.pe, ep_only = True)
 		if(matches is not None):
