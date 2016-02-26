@@ -173,7 +173,7 @@ class StaticAnalysis:
 def start_analysis(binary):
 	sa = StaticAnalysis(binary)
 	sa.analyzeSections()
-	#sa.callPEiD(signatures)
+	sa.callPEiD(signatures)
 	sa.decompile() # TEST
 	return
 
