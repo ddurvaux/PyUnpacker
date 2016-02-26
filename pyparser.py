@@ -27,7 +27,7 @@ import os
 import pefile
 import peutils
 import sys
-import distorm3
+from distorm3 import Decode, Decode16Bits, Decode32Bits, Decode64Bits, Decompose, DecomposeGenerator, DF_STOP_ON_FLOW_CONTROL
 
 # TODO - set this as a CLI parameter
 # DB downloaded on
@@ -155,6 +155,17 @@ class StaticAnalysis:
 				print "PACKER FOUND: %s" % matches[0]
 		return self.bininfo
 
+	def decompile(self):
+		l = DecomposeGenerator(0x100, open(self.binary, "rb").read(), Decode32Bits, DF_STOP_ON_FLOW_CONTROL)
+		
+		# -- BEGIN TEST CODE --
+		for i in l:
+			#print "0x%08x (%02x) %-20s %s" % (i[0],  i[1],  i[3],  i[2])
+			print "0x%08x %s" % (i.address, i)
+		# -- END TEST CODE --
+
+		return
+
 
 # --------------------------------------------------------------------------- #
 # MAIN SECTION OF CODE
@@ -162,7 +173,8 @@ class StaticAnalysis:
 def start_analysis(binary):
 	sa = StaticAnalysis(binary)
 	sa.analyzeSections()
-	sa.callPEiD(signatures)
+	#sa.callPEiD(signatures)
+	sa.decompile() # TEST
 	return
 
 def main():
