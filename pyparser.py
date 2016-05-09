@@ -34,7 +34,8 @@ from distorm3 import Decode, Decode16Bits, Decode32Bits, Decode64Bits, Decompose
 # https://raw.githubusercontent.com/viper-framework/viper/master/data/peid/UserDB.TXT (UPX not detected)
 # https://raw.githubusercontent.com/ynadji/peid/master/userdb.txt (problems)
 # http://blog.didierstevens.com/programs/yara-rules/
-signatures = peutils.SignatureDatabase('./peid/peid-userdb-rules-with-pe-module.yara')
+#signatures = peutils.SignatureDatabase('./peid/peid-userdb-rules-with-pe-module.yara')
+signatures = peutils.SignatureDatabase('./peid/UserDB.TXT')
 
 # --------------------------------------------------------------------------- #
 # REPRESENTATION OF THE INFO RETRIEVED
@@ -194,7 +195,7 @@ def start_analysis(binary):
 	sa = StaticAnalysis(binary)
 	sa.analyzeSections()
 	sa.callPEiD(signatures)
-	sa.decompile() # TEST
+	#sa.decompile() # TEST
 	return
 
 def main():
