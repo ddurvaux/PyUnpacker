@@ -115,7 +115,20 @@ class StaticAnalysis:
 	def analyzeSections(self):
 		"""
 			TODO: mutliple output support, number of test
+
+			Need to Add:
+			- check section names
+			- check where entry point is located (in the last section)
+			- first section should be writeable
+			- last section should be executable
+			- ...
 		"""
+		# check number of sections
+		if(len(self.pe.sections)) != 3:
+			print "ABNOMALIE in NUMBER OF SECTIONS (%d)!!" % len(self.pe.sections)
+			self.bininfo.packed_score += 1
+			self.bininfo.packed_test += 1
+
 		# check section + boundary and see if it matches
 		for section in self.pe.sections:
 			[name, vaddr, vsize, rsize, flags] = [section.Name, section.VirtualAddress, section.Misc_VirtualSize, section.SizeOfRawData, section.Characteristics]
@@ -156,14 +169,21 @@ class StaticAnalysis:
 		return self.bininfo
 
 	def decompile(self):
-		l = DecomposeGenerator(0x100, open(self.binary, "rb").read(), Decode32Bits, DF_STOP_ON_FLOW_CONTROL)
-		
-		# -- BEGIN TEST CODE --
-		for i in l:
-			#print "0x%08x (%02x) %-20s %s" % (i[0],  i[1],  i[3],  i[2])
-			print "0x%08x %s" % (i.address, i)
-		# -- END TEST CODE --
+		"""
+			! need to take in account offset in memory ! 
+		"""
+		fd = open(self.binary, "rb")
 
+		l = DecomposeGenerator(0x100, fd.read(), Decode32Bits, DF_STOP_ON_FLOW_CONTROL)
+		while(l is not None):
+			# -- BEGIN TEST CODE --
+			for i in l:
+				#print "0x%08x (%02x) %-20s %s" % (i[0],  i[1],  i[3],  i[2])
+				print "0x%08x %s" % (i.address, i)
+			# -- END TEST CODE --
+			l = DecomposeGenerator(0x100, fd.read(), Decode32Bits, DF_STOP_ON_FLOW_CONTROL)
+
+		fd.close()
 		return
 
 
