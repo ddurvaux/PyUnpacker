@@ -18,16 +18,18 @@ vw.loadFromFile(malbin, None)
 vw.analyze() # binary analysis
 vw.saveWorkspace() # save work
 
-
 # Test -- ! need to find correctly the "main" function
 for function in vw.getFunctions():
-	print("%s\n" % function)
-viv_cgh.buildFunctionGraph(vw, vw.getFunctions()[0])
+	print("%s %s\n" % (type(function), function))
+eip = vw.getLocation(vw.getFunctions()[0])
+print("EIP LOCATION: %s" % str(eip))
 
 # call the code block graph
 #graph = viv_cg.CodeBlockGraph(vw)
 print "GRAPH SEARCH"
-graph = viv_cg.CallGraph()
+graph = viv_cg.CodeBlockGraph(vw)
+print "HELLO WORLD!!"
+print("TEST: %s" % str(graph.isCodeBlockNode(eip)))
 print("NUMBER OF NODES: %d" % len(graph.getNodes()))
 for node in graph.getNodes():
 	if graph.isLeafNode(node):
