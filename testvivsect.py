@@ -8,28 +8,32 @@ import vivisect.codegraph as viv_cg
 import vivisect.tools.graphutil as viv_cgh
 
 # Parameters
-malbin = "./demo/upx.exe"
+malbin = "./demo/36a209a7d15d5d719d6072f45e4e3b46"
 
 # Binary analysis
 # TODO - support workspace restoration
 vw = viv_cli.VivCli()
 vw.verbose = True # Enable verbose mode
 vw.loadFromFile(malbin, None)
-vw.analyze() # binary analysis
+vw.analyze() # binary analysis"
 vw.saveWorkspace() # save work
 
 # Test -- ! need to find correctly the "main" function
 for function in vw.getFunctions():
 	print("%s %s\n" % (type(function), function))
 eip = vw.getLocation(vw.getFunctions()[0])
-print("EIP LOCATION: %s" % str(eip))
+print("NUMBER OF FUNCTIONS FOUNDS: %s" % str(len(vw.getFunctions())))
+
+# -- CONTROL FLOW GRAPH? HOWTO --
+
+print("EIP LOCATION: 0x%08x" % vw.getFunctions()[0])
+print("TypeOf GetLocation: %s" % type(eip))
 
 # call the code block graph
 #graph = viv_cg.CodeBlockGraph(vw)
 print "GRAPH SEARCH"
-graph = viv_cg.CodeBlockGraph(vw)
+graph = vw.getFunctionGraph(vw.getFunctions()[0])
 print "HELLO WORLD!!"
-print("TEST: %s" % str(graph.isCodeBlockNode(eip)))
 print("NUMBER OF NODES: %d" % len(graph.getNodes()))
 for node in graph.getNodes():
 	if graph.isLeafNode(node):
