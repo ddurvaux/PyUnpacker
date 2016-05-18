@@ -15,6 +15,9 @@
 #  - VirusTotal Support
 #  - dynamic analysis (GDB? Valgring?)
 #  - static code analysis with Radare2
+#  - add arguments for vivsect
+#  - add argument for PEID
+#  - handle the foce option
 #  - ..
 #
 __author__ = 'David DURVAUX'
@@ -36,6 +39,9 @@ from distorm3 import Decode, Decode16Bits, Decode32Bits, Decode64Bits, Decompose
 # http://blog.didierstevens.com/programs/yara-rules/
 signatures = peutils.SignatureDatabase('./peid/peid-userdb-rules-with-pe-module.yara')
 #signatures = peutils.SignatureDatabase('./peid/UserDB.TXT')
+
+# general settings
+force = False
 
 # TODO - set this in parameter too
 # hack to load vivisect :(
@@ -59,6 +65,7 @@ class BinaryInformations:
 	settings = {}
 	packed_score = 0 # current packed score
 	packed_test = 0  # number of test done
+	breakpoints = [] # breakoint to set for unpacking
 
 	def __init__(self):
 		return
@@ -185,7 +192,7 @@ class StaticAnalysis:
 		vw = viv_cli.VivCli()
 
 		# check if workspace exists (ADD --force option?)
-		if(os.path.exists("%s.viv" % self.binary)):
+		if(not force and os.path.exists("%s.viv" % self.binary)):
 			print("Found an existing workspace: restoring.  Use --force to reload the analysis.")
 			vw.loadWorkspace("%s.viv" % self.binary)
 		else:
@@ -209,7 +216,8 @@ class StaticAnalysis:
 					visited.append(node)
 				if graph.isLeafNode(node):
 					# TODO print the surrounding code block
-					print("Set BP at: 0x%08x" % node[0])
+					print("TIP: Set BP at: 0x%08x" % node[0])
+					self.bininfo.breakpoints.append(node[0])
 
 		return
 
@@ -246,10 +254,17 @@ def start_analysis(binary):
 def main():
 	# Argument definition
 	parser = argparse.ArgumentParser(description='Analyse binaries and try to help with deobfuscation')
-	parser.add_argument('-bin', '--binary', help='Binary to analyze')
+	parser.add_argument('-b', '--binary', help='Binary to analyze')
+	parser.add_argument('-f', '--force', help='Force a fresh analysis, no restoration of previous work', action="store_true")
+
 
 	# Start the fun part :)
 	args = parser.parse_args()
+
+	# if force flag is defined, change behaviour
+	if args.force:
+		print("DEBUG: SET FORCE MODE on")
+		force = True
 
 	# Check if an output directory is set
 	binary = None
