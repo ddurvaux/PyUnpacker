@@ -34,8 +34,16 @@ from distorm3 import Decode, Decode16Bits, Decode32Bits, Decode64Bits, Decompose
 # https://raw.githubusercontent.com/viper-framework/viper/master/data/peid/UserDB.TXT (UPX not detected)
 # https://raw.githubusercontent.com/ynadji/peid/master/userdb.txt (problems)
 # http://blog.didierstevens.com/programs/yara-rules/
-#signatures = peutils.SignatureDatabase('./peid/peid-userdb-rules-with-pe-module.yara')
-signatures = peutils.SignatureDatabase('./peid/UserDB.TXT')
+signatures = peutils.SignatureDatabase('./peid/peid-userdb-rules-with-pe-module.yara')
+#signatures = peutils.SignatureDatabase('./peid/UserDB.TXT')
+
+# TODO - set this in parameter too
+# hack to load vivisect :(
+sys.path.append("/Users/david/Workspace/git/vivisect")
+import vivisect
+import vivisect.cli as viv_cli
+import vivisect.codegraph as viv_cg
+import vivisect.tools.graphutil as viv_cgh
 
 # --------------------------------------------------------------------------- #
 # REPRESENTATION OF THE INFO RETRIEVED
@@ -154,7 +162,7 @@ class StaticAnalysis:
 			# update bininfo status
 			self.bininfo.packed_test += 3 # 3 tests are done for each section
 
-		print "TOTAL PACKED SCORE: %s" % self.bininfo.packed_score
+		print ("TOTAL PACKED SCORE: %s / %s" % (self.bininfo.packed_score, self.bininfo.packed_test))
 		return self.bininfo
 
 	def callPEiD(self, signatures):
@@ -168,6 +176,42 @@ class StaticAnalysis:
 			if(len(matches) > 0):
 				print "PACKER FOUND: %s" % matches[0]
 		return self.bininfo
+
+	
+	def graphSearch(self):
+		"""
+			Do a graph search in the code for leaf nodes
+		"""
+		vw = viv_cli.VivCli()
+
+		# check if workspace exists (ADD --force option?)
+		if(os.path.exists("%s.viv" % self.binary)):
+			print("Found an existing workspace: restoring.  Use --force to reload the analysis.")
+			vw.loadWorkspace("%s.viv" % self.binary)
+		else:
+			vw.loadFromFile(self.binary, None)
+			vw.analyze() # binary analysis"
+			vw.saveWorkspace() # save work
+
+		# search for EIP and loop on all of them
+		for eip in vw.getEntryPoints():
+			print("FOUND ENTRY POINT 0x%08x\n" % eip)
+
+			# build a code graph starting at EIP
+			graph = viv_cgh.buildFunctionGraph(vw, eip)
+			visited = []
+
+			for node in graph.getNodes():
+				if(node in visited):
+					print("LOOP DETECTED in CODE -- ignoring path!")
+					break
+				else:
+					visited.append(node)
+				if graph.isLeafNode(node):
+					# TODO print the surrounding code block
+					print("Set BP at: 0x%08x" % node[0])
+
+		return
 
 	def decompile(self):
 		"""
@@ -195,6 +239,7 @@ def start_analysis(binary):
 	sa = StaticAnalysis(binary)
 	sa.analyzeSections()
 	sa.callPEiD(signatures)
+	sa.graphSearch()
 	#sa.decompile() # TEST
 	return
 
