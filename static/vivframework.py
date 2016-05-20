@@ -72,7 +72,7 @@ class Vivisect:
 		return
 
 
-	def isJumpFar():
+	def isJumpFar(self):
 		"""
 			Try to detect if the jump looks like a jump into deobfuscated memory area
 		"""
@@ -96,9 +96,24 @@ class Vivisect:
 		print("NOT IMPLEMENTED")
 		return
 
-	def isAntiDebug():
+	def isAntiDebug(self):
 		"""
-			sDebuggerPresent
+			Check for anti-debugging tricks
+			Update bininfo.anti_debug accordinely
+
+			TODO - add support for other tricks
 		"""
+		# check for isDebbugerPresent()
+		debugPresent = self.vw.getImportCallers('winapi.IsDebuggerPresent')
+		if(len(debugPresent) > 0):
+			print("isDebuggerPresent() found")
+			bininfo.anti_debug = True
+		return bininfo.anti_debug
+
+	def getPerFunctionHash(self):
+		print("NOT IMPLEMENTED")
+		return
+
+	def getFunctionCode(self, va):
 		print("NOT IMPLEMENTED")
 		return

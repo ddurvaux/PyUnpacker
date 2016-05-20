@@ -15,9 +15,7 @@
 #  - VirusTotal Support
 #  - dynamic analysis (GDB? Valgring?)
 #  - static code analysis with Radare2
-#  - add arguments for vivsect
 #  - add argument for PEID
-#  - handle the foce option
 #  - save status / restore (config/analysis)
 #  - ..
 #
@@ -43,6 +41,8 @@ import static.vivframework
 class Configuration:
 
 	force = False  # force to redo all the analysis
+	modstatic = None  # static analysis module
+	moddynamic = None # dynamic analysis module
 
 	# DB downloaded on
 	# https://raw.githubusercontent.com/viper-framework/viper/master/data/peid/UserDB.TXT (UPX not detected)
@@ -77,6 +77,7 @@ class BinaryInformations:
 	packed_score = 0 # current packed score
 	packed_test = 0  # number of test done
 	breakpoints = [] # breakoint to set for unpacking
+	anti_debug = False
 
 	def __init__(self):
 		return
@@ -205,12 +206,16 @@ class StaticAnalysis:
 		"""
 			Do a graph search in the code for leaf nodes
 		"""
-		vivisect = static.vivframework.Vivisect(self.binary, self.bininfo, self.configuration.force)
-		vivisect.graphSearch()
+		configuration.modstatic.graphSearch()
+
+	def isAntiDebug(self):
+		if configuration.modstatic.isAntiDebug():
+			print "WARNING: ANTI-DEBUGGING TRICKS FOUND!"
 
 	def decompile(self):
 		"""
 			! need to take in account offset in memory ! 
+			-- CODE TO REMOVE -- DEPRECATED --
 		"""
 		fd = open(self.binary, "rb")
 
@@ -235,6 +240,7 @@ def start_analysis(binary, configuration):
 	sa.analyzeSections()
 	sa.callPEiD()
 	sa.graphSearch()
+	sa.isAntiDebug()
 	#sa.decompile() # TEST
 	return
 
@@ -264,13 +270,16 @@ def main():
 			print "ERROR: %s not found!" % args.yara
 			exit()
 
-	# set Vivisect path
+	# set Vivisect path and Initialize
+	# currently only vivisect is supported
+	# this code need to be changed if other libraries get supported later
 	if args.vivisect:
 		if os.path.isdir(args.vivisect):
 			sys.path.append(args.vivisect)
 		else:
 			print "ERROR: %s not found!" % args.vivisect
 			exit()
+	configuration.modstatic = static.vivframework.Vivisect(self.binary, self.bininfo, self.configuration.force)
 
 	# Check if an output directory is set
 	binary = None
