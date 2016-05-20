@@ -16,34 +16,38 @@ class Vivisect:
 	binary = None
 	bininfo = None
 	force = False
+	vw = None
 
 	def __init__(self, binary, bininfo, force=False):
 		self.binary = binary
 		self.bininfo = bininfo
 		self.force = force
+
+		# initialize Vivisect Framework
+		self.vw = viv_cli.VivCli()
+
+		# check if workspace exists (ADD --force option?)
+		if(not self.force and os.path.exists("%s.viv" % self.binary)):
+			print("Found an existing workspace: restoring.  Use --force to reload the analysis.")
+			self.vw.loadWorkspace("%s.viv" % self.binary)
+		else:
+			self.vw.loadFromFile(self.binary, None)
+			self.vw.analyze() # binary analysis"
+			self.vw.saveWorkspace() # save work
+
+		# done
 		return
 
 	def graphSearch(self):
 		"""
 			Do a graph search in the code for leaf nodes
 		"""
-		vw = viv_cli.VivCli()
-
-		# check if workspace exists (ADD --force option?)
-		if(not self.force and os.path.exists("%s.viv" % self.binary)):
-			print("Found an existing workspace: restoring.  Use --force to reload the analysis.")
-			vw.loadWorkspace("%s.viv" % self.binary)
-		else:
-			vw.loadFromFile(self.binary, None)
-			vw.analyze() # binary analysis"
-			vw.saveWorkspace() # save work
-
 		# search for EIP and loop on all of them
-		for eip in vw.getEntryPoints():
+		for eip in self.vw.getEntryPoints():
 			print("FOUND ENTRY POINT 0x%08x\n" % eip)
 
 			# build a code graph starting at EIP
-			graph = viv_cgh.buildFunctionGraph(vw, eip)
+			graph = viv_cgh.buildFunctionGraph(self.vw, eip)
 			visited = []
 
 			for node in graph.getNodes():
@@ -56,7 +60,6 @@ class Vivisect:
 					# TODO print the surrounding code block
 					print("TIP: Set BP at: 0x%08x" % node[0])
 					self.bininfo.breakpoints.append(node[0])
-
 		return
 
 	def searchVirtualAlloc(self):
@@ -64,6 +67,7 @@ class Vivisect:
 			VirualAllocEx
 			ZwAllocateVirtualMemory
 		"""
+		# vw.getImportCallers('kernel32.CreateFileA')
 		print("NOT IMPLEMENTED")
 		return
 
