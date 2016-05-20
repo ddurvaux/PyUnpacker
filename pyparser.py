@@ -241,6 +241,10 @@ def start_analysis(binary, configuration):
 	sa.callPEiD()
 	sa.graphSearch()
 	sa.isAntiDebug()
+
+	# TEST
+	sa.searchVirtualAlloc()
+
 	#sa.decompile() # TEST
 	return
 

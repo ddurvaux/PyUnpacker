@@ -64,11 +64,19 @@ class Vivisect:
 
 	def searchVirtualAlloc(self):
 		"""
+			Search for memory allocation as place where binary could be unpacked
+
 			VirualAllocEx
-			ZwAllocateVirtualMemory
+			https://msdn.microsoft.com/en-us/library/windows/desktop/aa366890(v=vs.85).aspx
+
+			ZwAllocateVirtualMemory:
+			https://msdn.microsoft.com/en-us/library/windows/hardware/ff566416(v=vs.85).aspx
 		"""
-		# vw.getImportCallers('kernel32.CreateFileA')
-		print("NOT IMPLEMENTED")
+		virtualAllocEx = self.vw.getImportCallers('winapi.VirtualAllocEx')
+		zwAllocateVirtMem = self.vw.getImportCallers('ntoskrnl.ZwAllocateVirtualMemory')
+		print("DEBUG: VirtualAllocEx: %d ZwAllocateVirtualMemory: %d" % (len(virtualAllocEx), len(zwAllocateVirtMem)))
+
+		print("NOT YET FULLY IMPLEMENTED!")
 		return
 
 
