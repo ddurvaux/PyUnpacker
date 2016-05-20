@@ -18,6 +18,7 @@
 #  - add arguments for vivsect
 #  - add argument for PEID
 #  - handle the foce option
+#  - save status / restore (config/analysis)
 #  - ..
 #
 __author__ = 'David DURVAUX'
@@ -32,24 +33,34 @@ import peutils
 import sys
 from distorm3 import Decode, Decode16Bits, Decode32Bits, Decode64Bits, Decompose, DecomposeGenerator, DF_STOP_ON_FLOW_CONTROL
 
-# TODO - set this as a CLI parameter
-# DB downloaded on
-# https://raw.githubusercontent.com/viper-framework/viper/master/data/peid/UserDB.TXT (UPX not detected)
-# https://raw.githubusercontent.com/ynadji/peid/master/userdb.txt (problems)
-# http://blog.didierstevens.com/programs/yara-rules/
-signatures = peutils.SignatureDatabase('./peid/peid-userdb-rules-with-pe-module.yara')
-#signatures = peutils.SignatureDatabase('./peid/UserDB.TXT')
+# Imports part of this tool
+import static.vivframework
 
-# general settings
-force = False
 
-# TODO - set this in parameter too
-# hack to load vivisect :(
-sys.path.append("/Users/david/Workspace/git/vivisect")
-import vivisect
-import vivisect.cli as viv_cli
-import vivisect.codegraph as viv_cg
-import vivisect.tools.graphutil as viv_cgh
+# --------------------------------------------------------------------------- #
+# REPRESENTATION OF THE CONFIGURATION
+# --------------------------------------------------------------------------- #
+class Configuration:
+
+	force = False  # force to redo all the analysis
+
+	# DB downloaded on
+	# https://raw.githubusercontent.com/viper-framework/viper/master/data/peid/UserDB.TXT (UPX not detected)
+	# https://raw.githubusercontent.com/ynadji/peid/master/userdb.txt (problems)
+	# http://blog.didierstevens.com/programs/yara-rules/
+	signatures = peutils.SignatureDatabase('./peid/peid-userdb-rules-with-pe-module.yara')
+
+	def __init__(self):
+		return
+
+	def save(self, filename="./.config"):
+		print ("NOT YET IMPLEMENTED!")
+		return
+
+	def load(self, filename="./config"):
+		print ("NOT YET IMPLEMENTED!")
+		return
+
 
 # --------------------------------------------------------------------------- #
 # REPRESENTATION OF THE INFO RETRIEVED
@@ -75,6 +86,7 @@ class BinaryInformations:
 		return
 
 	def save(self, filename=sys.stdout):
+		print ("NOT YET IMPLEMENTED!")
 		return
 
 # --------------------------------------------------------------------------- #
@@ -86,7 +98,8 @@ class StaticAnalysis:
 
 		@TODO: define access to page_size, margin, entropy_threshold and packed_score
 	"""
-	# class variables
+	# class variable
+	configuration = None
 	binary = None
 	bininfo = None
 	page_size = 0
@@ -103,7 +116,7 @@ class StaticAnalysis:
 		# other: check https://msdn.microsoft.com/en-us/library/ms809762.aspx
 	}
 
-	def __init__(self, binary, page_size=0x1000, margin=0.1, entropy_threshold = 7.0, packed_score=0):
+	def __init__(self, binary, configuration, page_size=0x1000, margin=0.1, entropy_threshold = 7.0, packed_score=0):
 		"""
 			binary the path to the binary to analyze
 		"""
@@ -117,6 +130,9 @@ class StaticAnalysis:
 		# instanciate internal objects
 		self.pe = pefile.PE(binary)
 		self.bininfo = BinaryInformations()
+
+		# keep track of the current configuration
+		self.configuration = configuration
 
 		# update BinaryInformation with current settings:
 		self.bininfo.settings["peanalysis"] = {
@@ -172,54 +188,25 @@ class StaticAnalysis:
 		print ("TOTAL PACKED SCORE: %s / %s" % (self.bininfo.packed_score, self.bininfo.packed_test))
 		return self.bininfo
 
-	def callPEiD(self, signatures):
+	def callPEiD(self):
 		"""
 			Use set of YARA rules to search for known packers
 
 			TODO - add a check on signature presence or download or end
+			     - postpone initialization of signatures DB here!!
 		"""
-		matches = signatures.match(self.pe, ep_only = True)
+		matches = self.configuration.signatures.match(self.pe, ep_only = True)
 		if(matches is not None):
 			if(len(matches) > 0):
 				print "PACKER FOUND: %s" % matches[0]
 		return self.bininfo
 
-	
 	def graphSearch(self):
 		"""
 			Do a graph search in the code for leaf nodes
 		"""
-		vw = viv_cli.VivCli()
-
-		# check if workspace exists (ADD --force option?)
-		if(not force and os.path.exists("%s.viv" % self.binary)):
-			print("Found an existing workspace: restoring.  Use --force to reload the analysis.")
-			vw.loadWorkspace("%s.viv" % self.binary)
-		else:
-			vw.loadFromFile(self.binary, None)
-			vw.analyze() # binary analysis"
-			vw.saveWorkspace() # save work
-
-		# search for EIP and loop on all of them
-		for eip in vw.getEntryPoints():
-			print("FOUND ENTRY POINT 0x%08x\n" % eip)
-
-			# build a code graph starting at EIP
-			graph = viv_cgh.buildFunctionGraph(vw, eip)
-			visited = []
-
-			for node in graph.getNodes():
-				if(node in visited):
-					print("LOOP DETECTED in CODE -- ignoring path!")
-					break
-				else:
-					visited.append(node)
-				if graph.isLeafNode(node):
-					# TODO print the surrounding code block
-					print("TIP: Set BP at: 0x%08x" % node[0])
-					self.bininfo.breakpoints.append(node[0])
-
-		return
+		vivisect = static.vivframework.Vivisect(self.binary, self.bininfo, self.configuration.force)
+		vivisect.graphSearch()
 
 	def decompile(self):
 		"""
@@ -243,10 +230,10 @@ class StaticAnalysis:
 # --------------------------------------------------------------------------- #
 # MAIN SECTION OF CODE
 # --------------------------------------------------------------------------- #
-def start_analysis(binary):
-	sa = StaticAnalysis(binary)
+def start_analysis(binary, configuration):
+	sa = StaticAnalysis(binary, configuration)
 	sa.analyzeSections()
-	sa.callPEiD(signatures)
+	sa.callPEiD()
 	sa.graphSearch()
 	#sa.decompile() # TEST
 	return
@@ -256,24 +243,44 @@ def main():
 	parser = argparse.ArgumentParser(description='Analyse binaries and try to help with deobfuscation')
 	parser.add_argument('-b', '--binary', help='Binary to analyze')
 	parser.add_argument('-f', '--force', help='Force a fresh analysis, no restoration of previous work', action="store_true")
+	parser.add_argument('-y', '--yara', help='Path to YARA DB to use to scan binary')
+	parser.add_argument('-viv', '--vivisect', help='Path to vivisect installation')
 
+	# create a configuration holder
+	configuration = Configuration()
 
 	# Start the fun part :)
 	args = parser.parse_args()
 
 	# if force flag is defined, change behaviour
 	if args.force:
-		print("DEBUG: SET FORCE MODE on")
-		force = True
+		configuration.force = True
+
+	# set YARA DB signature
+	if args.yara:
+		if os.path.isfile(args.yara):
+			configuration.signatures = args.yara
+		else:
+			print "ERROR: %s not found!" % args.yara
+			exit()
+
+	# set Vivisect path
+	if args.vivisect:
+		if os.path.isdir(args.vivisect):
+			sys.path.append(args.vivisect)
+		else:
+			print "ERROR: %s not found!" % args.vivisect
+			exit()
 
 	# Check if an output directory is set
 	binary = None
 	if args.binary:
 		if os.path.isfile(args.binary):
 			binary = args.binary
-			start_analysis(binary)
+			start_analysis(binary, configuration)
 	else:
 		print "You need to specify a file to analyze"
+		exit()
 
 if __name__ == "__main__":
     main()
