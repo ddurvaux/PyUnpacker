@@ -58,3 +58,43 @@ class Vivisect:
 					self.bininfo.breakpoints.append(node[0])
 
 		return
+
+	def searchVirtualAlloc(self):
+		"""
+			VirualAllocEx
+			ZwAllocateVirtualMemory
+		"""
+		print("NOT IMPLEMENTED")
+		return
+
+
+	def isJumpFar():
+		"""
+			Try to detect if the jump looks like a jump into deobfuscated memory area
+		"""
+		print("NOT IMPLEMENTED")
+		return
+
+	def exceptionHandler(self):
+		"""
+			push push mov
+			Exception_Handler_Address ; The Exception Handler address is on stack large dword ptr fs:0
+			large fs:0, esp
+			--------- [Make Exception] -------------
+			pop large dword ptr fs:0 ; remove SEH add esp, 4 ; Align Stack
+
+
+		or
+
+
+			RTDSC
+		"""
+		print("NOT IMPLEMENTED")
+		return
+
+	def isAntiDebug():
+		"""
+			sDebuggerPresent
+		"""
+		print("NOT IMPLEMENTED")
+		return
