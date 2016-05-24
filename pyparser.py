@@ -135,6 +135,9 @@ class StaticAnalysis:
 		# keep track of the current configuration
 		self.configuration = configuration
 
+		# initialize static analysis module (TODO - add support for others)
+		self.configuration.modstatic = static.vivframework.Vivisect(self.binary, self.bininfo, self.configuration.force)
+
 		# update BinaryInformation with current settings:
 		self.bininfo.settings["peanalysis"] = {
 			"binary" : self.binary,
@@ -206,11 +209,14 @@ class StaticAnalysis:
 		"""
 			Do a graph search in the code for leaf nodes
 		"""
-		configuration.modstatic.graphSearch()
+		self.configuration.modstatic.graphSearch()
 
 	def isAntiDebug(self):
-		if configuration.modstatic.isAntiDebug():
+		if self.configuration.modstatic.isAntiDebug():
 			print "WARNING: ANTI-DEBUGGING TRICKS FOUND!"
+
+	def searchVirtualAlloc(self):
+		self.configuration.modstatic.searchVirtualAlloc()
 
 	def decompile(self):
 		"""
@@ -241,8 +247,6 @@ def start_analysis(binary, configuration):
 	sa.callPEiD()
 	sa.graphSearch()
 	sa.isAntiDebug()
-
-	# TEST
 	sa.searchVirtualAlloc()
 
 	#sa.decompile() # TEST
@@ -283,7 +287,6 @@ def main():
 		else:
 			print "ERROR: %s not found!" % args.vivisect
 			exit()
-	configuration.modstatic = static.vivframework.Vivisect(self.binary, self.bininfo, self.configuration.force)
 
 	# Check if an output directory is set
 	binary = None

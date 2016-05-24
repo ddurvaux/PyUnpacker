@@ -58,8 +58,11 @@ class Vivisect:
 					visited.append(node)
 				if graph.isLeafNode(node):
 					# TODO print the surrounding code block
-					print("TIP: Set BP at: 0x%08x" % node[0])
+					print("TIP: Set BP at: 0x%08x (%s)" % (node[0], self.vw.reprVa(node[0])))
 					self.bininfo.breakpoints.append(node[0])
+					#self.getFunctionCode(node[0])
+
+			#TODO: add check if instruction is JMP + destination
 		return
 
 	def searchVirtualAlloc(self):
@@ -115,13 +118,17 @@ class Vivisect:
 		debugPresent = self.vw.getImportCallers('winapi.IsDebuggerPresent')
 		if(len(debugPresent) > 0):
 			print("isDebuggerPresent() found")
-			bininfo.anti_debug = True
-		return bininfo.anti_debug
+			self.bininfo.anti_debug = True
+		return self.bininfo.anti_debug
 
 	def getPerFunctionHash(self):
 		print("NOT IMPLEMENTED")
 		return
 
 	def getFunctionCode(self, va):
+		funcva = self.vw.getFunction(va)
+		codeblock = self.vw.getFunctionBlocks(funcva)
+		for block in codeblock:
+			print("CODE BLOCK: %s" % self.vw.reprVa(block[0]))
 		print("NOT IMPLEMENTED")
 		return
