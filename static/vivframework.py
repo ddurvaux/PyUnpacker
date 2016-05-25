@@ -63,6 +63,7 @@ class Vivisect:
 					for ref in refby:
 						print("    REFERENCED at:  0x%08x (%s)" % (ref[0], self.vw.reprVa(ref[0])))
 						self.getFunctionCode(ref[0])
+						self.isJumpFar() # DEBUG
 					self.bininfo.breakpoints.append(node[0])
 
 			#TODO: add check if instruction is JMP + destination
@@ -91,7 +92,12 @@ class Vivisect:
 			Try to detect if the jump looks like a jump into deobfuscated memory area
 
 			Play with memory map
+
+			Need to add arguments (destination)
 		"""
+		#segments = self.vw.getSegments() # show section in code.... not the goal
+		print("DEBUG")
+
 		print("NOT IMPLEMENTED")
 		return
 
@@ -136,8 +142,10 @@ class Vivisect:
 			BUGGY!!
 		"""
 		codeblock = self.vw.getCodeBlock(va)
-		blocks = self.vw.getFunctionBlocks(codeblock[0])
-		for block in blocks:
-			print("CODE BLOCK: %s" % self.vw.reprVa(block[0]))
+		print("DEBUG")
+		print(codeblock)
+		#blocks = self.vw.getFunctionBlocks(codeblock[0])
+		#for block in blocks:
+		#	print("CODE BLOCK: %s" % self.vw.reprVa(block[0]))
 		print("NOT IMPLEMENTED")
 		return
