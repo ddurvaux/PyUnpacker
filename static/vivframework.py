@@ -41,6 +41,8 @@ class Vivisect:
 	def graphSearch(self):
 		"""
 			Do a graph search in the code for leaf nodes
+
+			TODO: check if detected instruction is a jump!
 		"""
 		# search for EIP and loop on all of them
 		for eip in self.vw.getEntryPoints():
@@ -58,15 +60,13 @@ class Vivisect:
 					visited.append(node)
 				if graph.isLeafNode(node):
 					# TODO print the surrounding code block
-					print("TIP: Set BP at: 0x%08x (%s)" % (node[0], self.vw.reprVa(node[0])))
-					refby = self.vw.getXrefsTo(node[0])
-					for ref in refby:
-						print("    REFERENCED at:  0x%08x (%s)" % (ref[0], self.vw.reprVa(ref[0])))
-						self.getFunctionCode(ref[0])
-						self.isJumpFar() # DEBUG
-					self.bininfo.breakpoints.append(node[0])
-
-			#TODO: add check if instruction is JMP + destination
+					if self.isJumpFar(node[0]):
+						print("TIP: Set BP at: 0x%08x (%s)" % (node[0], self.vw.reprVa(node[0])))
+						refby = self.vw.getXrefsTo(node[0])
+						for ref in refby:
+							print("    REFERENCED at:  0x%08x (%s)" % (ref[0], self.vw.reprVa(ref[0])))
+							self.getFunctionCode(ref[0])
+						self.bininfo.breakpoints.append(node[0])
 		return
 
 	def searchVirtualAlloc(self):
@@ -87,19 +87,22 @@ class Vivisect:
 		return
 
 
-	def isJumpFar(self):
+	def isJumpFar(self, destaddr):
 		"""
 			Try to detect if the jump looks like a jump into deobfuscated memory area
 
-			Play with memory map
+			TODO:
+				- keep the memory zone somewhere to speed up process
+				- enhance detection (naive implementation right now)
 
-			Need to add arguments (destination)
 		"""
-		#segments = self.vw.getSegments() # show section in code.... not the goal
-		print("DEBUG")
-
-		print("NOT IMPLEMENTED")
-		return
+		segments = self.vw.getSegments() # show section in code.... not the goal
+		for [segaddr, segsize, segloc, segname] in segments:
+			segend = segaddr + segsize
+			if( (segaddr <= destaddr) and (destaddr <= segend)):
+				return False
+			#print("DEBUG SEGMENT INFO: 0x%08x -> 0x%08x size:%d (%s %s)" % (segaddr, segend, segsize, segloc, segname))
+		return True
 
 	def exceptionHandler(self):
 		"""

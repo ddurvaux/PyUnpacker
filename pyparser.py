@@ -17,6 +17,7 @@
 #  - static code analysis with Radare2
 #  - add argument for PEID
 #  - save status / restore (config/analysis)
+#  - extract fucnction without offset for comparison of samples
 #  - ..
 #
 __author__ = 'David DURVAUX'
@@ -217,6 +218,7 @@ class StaticAnalysis:
 
 	def searchVirtualAlloc(self):
 		self.configuration.modstatic.searchVirtualAlloc()
+		
 
 	def decompile(self):
 		"""
