@@ -218,8 +218,10 @@ class StaticAnalysis:
 
 	def searchVirtualAlloc(self):
 		self.configuration.modstatic.searchVirtualAlloc()
-		
 
+	def getPerFunctionHash(self):
+		self.configuration.modstatic.getPerFunctionHash()
+		
 	def decompile(self):
 		"""
 			! need to take in account offset in memory ! 
@@ -250,6 +252,10 @@ def start_analysis(binary, configuration):
 	sa.graphSearch()
 	sa.isAntiDebug()
 	sa.searchVirtualAlloc()
+
+
+
+	sa.getPerFunctionHash() #TEST
 
 	#sa.decompile() # TEST
 	return

@@ -11,6 +11,7 @@ import vivisect.tools.graphutil as viv_cgh
 
 # import other libraries
 import os
+import hashlib
 
 class Vivisect:
 	binary = None
@@ -136,6 +137,19 @@ class Vivisect:
 		return self.bininfo.anti_debug
 
 	def getPerFunctionHash(self):
+
+		for fva in self.vw.getFunctions():
+			fcode = self.getFunctionCode(fva)
+			ccode = self.__clean_code__(fcode)
+			fhash = self.__make_hash__(ccode)
+			print("FUNCTION 0x%08x --> %s" % (fva, fhash))
+			#  -- HERE compute hash -- 
+
+		# get the list of functions then loop on each to 
+		# compute SSDEEP and alternate methods
+		# after cleaning offsets and non relative addresses
+		# --> make a tool class for this
+
 		print("NOT IMPLEMENTED")
 		return
 
@@ -144,11 +158,28 @@ class Vivisect:
 			Not working - gives back code after
 			BUGGY!!
 		"""
+		blocksstr = []
 		codeblock = self.vw.getCodeBlock(va)
-		print("DEBUG")
-		print(codeblock)
-		#blocks = self.vw.getFunctionBlocks(codeblock[0])
-		#for block in blocks:
-		#	print("CODE BLOCK: %s" % self.vw.reprVa(block[0]))
+		#print("DEBUG")
+		#print(codeblock)
+		blocks = self.vw.getFunctionBlocks(codeblock[0])
+		for block in blocks:
+			blocksstr.append("%s" % self.vw.reprVa(block[0]))
 		print("NOT IMPLEMENTED")
-		return
+		return blocksstr
+
+	def __clean_code__(self, opcodes):
+		print("NOT IMPLEMENTED")
+		return opcodes #DEBUG
+
+	def __make_hash__(self, opcodes):
+		"""
+			TODO EXTEND + IMPROVE!
+		"""
+		bigstr = ""
+		for block in opcodes:
+			bigstr = bigstr + block
+		m = hashlib.md5()
+		m.update(bigstr)
+		return m.hexdigest()
+
