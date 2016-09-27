@@ -16,11 +16,15 @@ def getFunctionCode(funcAddress):
 	chunks = Chunks(funcAddress)
 	for [start, end] in chunks:
 		print ("CHUNK: %s -> %s" % (start, end))
+		for ea in FuncItems(start):
+			instrs = GetDisasm(ea)
+			print("DEBUG INSTR: %s" % instrs)
 	return None #NOT IMPLEMENTED!!
 
 def main():
 	print "IDA PYTHON PLUGIN STARTED!!"
 	
+
 	# TEST
 	getPerFunctionHash()
 
