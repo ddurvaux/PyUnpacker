@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #
 # This tool is an attempt to automate some taks related
+
 # to malware unpacking.
 #
 # Most (if not all) of the tricks used in this tool 
