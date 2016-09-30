@@ -22,8 +22,16 @@
 #			/usr/lib/libSystem.B.dylib (for architecture x86_64):	Mach-O 64-bit dynamically linked shared library x86_64
 #
 # To compile:
-# ./configure CFLAGS="-arch i386 -arch x86_64" CXXFLAGS="-arch i386 -arch x86_64" LDFLAGS="-arch i386 -arch x86_64"
-# 
+# ./configure --prefix=/usr/local/
+# make CXXFLAGS="-arch i386 -arch x86_64" CFLAGS="-arch i386 -arch x86_64" LDFLAGS="-arch i386 -arch x86_64"
+# sudo make install
+#
+# Check if fixed:
+# $ file /usr/local/lib/libfuzzy.2.dylib
+# 		/usr/local/lib/libfuzzy.2.dylib: Mach-O universal binary with 2 architectures
+# 		/usr/local/lib/libfuzzy.2.dylib (for architecture i386):	Mach-O dynamically linked shared library i386
+# 		/usr/local/lib/libfuzzy.2.dylib (for architecture x86_64):	Mach-O 64-bit dynamically linked shared library x86_64
+#
 # TODO: remove relative address
 #
 from idautils import *
