@@ -40,14 +40,15 @@
 # - remove relative address (function cleanUpCode)
 # - replace pickle by JSON format
 #
-from idautils import *
-from idc import *
-import ssdeep
+# --------------------------------------------------------------------------- #
+import os
 import md5
 import sys
-import os
-#from lshash import LSHasqcccfrt
 import pickle
+import ssdeep
+from idc import *
+from idautils import *
+#from lshash import LSHasqcccfrt
 
 debug = False
 dump = True
@@ -63,6 +64,7 @@ def getPerFunctionHash():
 	hashes = {}
 	for function in functions:
 		funcCode = getFunctionCode(function)
+		funcCode = cleanUpCode(function, funcCode)
 		ssdeepstr = ssdeep.hash(funcCode)
 		md5str = md5.new(funcCode).hexdigest()
 		#lsh = LSHash(512, len(funcCode))
@@ -101,21 +103,38 @@ def getFunctionCode(funcAddress):
 		fd = open("./%s/%s.asm" % (dumpdir, funcAddress), "w")
 		fd.write(funcCodeStr)
 		fd.close()
+
 	return funcCodeStr
 
 
-def cleanUpCode(codeStr):
+def cleanUpCode(funcAddress, codeStr):
 	"""
 		For an instruction, remove references
 
 		Require to make intelligent comparison
 		idepentetly of offset, addresses...
 	"""
-	
+	# Code pattern and their generic replacement	
+	patterns = {
+		#    PATTERN         REPLACEMENT
+		"\[\w{3}\+.*\]"    :   "[VAR]" ,   # mov     ecx, [ebp+arg_8]
+		"offset off_\d+"   :   "OFFSET",   # mov     ebx, offset off_419940
+		"loc_\d+"          :   "LOC"   ,   # jz      short loc_406470
+		";\s+\w+(\s+\*)?"  :   ""      ,   # remove  comments
+	}
+	for pattern in patterns.keys():
+		replacement = patterns[pattern]
+		codeStr = re.sub(pattern, replacement, codeStr)
+
+	if dump:
+		fd = open("./%s/%s.casm" % (dumpdir, funcAddress), "w")
+		fd.write(codeStr)
+		fd.close()
+
 	return codeStr
 
-
 # --------------------------------------------------------------------------- #
+
 def main():
 	"""
 		Test / DEBUG function!
@@ -130,8 +149,13 @@ def main():
 		if not os.path.exists("./%s" % dumpdir):
 			os.makedirs("./%s" % dumpdir)
 
-	# TEST
+	# Compute Hashes and signatures for all functions
 	getPerFunctionHash()
+
+	# All done :)
+	return
+
+# --------------------------------------------------------------------------- #
 
 if __name__ == "__main__":
     main()
