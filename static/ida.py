@@ -32,42 +32,106 @@
 # 		/usr/local/lib/libfuzzy.2.dylib (for architecture i386):	Mach-O dynamically linked shared library i386
 # 		/usr/local/lib/libfuzzy.2.dylib (for architecture x86_64):	Mach-O 64-bit dynamically linked shared library x86_64
 #
-# TODO: remove relative address
+# Don't forget to re-install python-ssdeep afterward
+# $ sudo python ./setup.py build
+# $ sudo python ./setup.py install
+#
+# TODO: 
+# - remove relative address (function cleanUpCode)
+# - replace pickle by JSON format
 #
 from idautils import *
 from idc import *
 import ssdeep
 import md5
 import sys
+import os
+#from lshash import LSHasqcccfrt
+import pickle
+
+debug = False
+dump = True
+dumpdir = "./dump"
 
 def getPerFunctionHash():
+	"""
+		Iterates on program function and, for each, computes
+	 	- MD5 sum
+	 	- SSDEEP
+	"""
 	functions = Functions()
+	hashes = {}
 	for function in functions:
 		funcCode = getFunctionCode(function)
 		ssdeepstr = ssdeep.hash(funcCode)
 		md5str = md5.new(funcCode).hexdigest()
+		#lsh = LSHash(512, len(funcCode))
+		#lsh.index(funcCode)
 		# TODO ADD OTHER TYPE OF HASHES
-		print "sub_%08x %s %s" % (function, md5str, ssdeepstr) # DEBUG
+		hashes[function] = {
+			"md5" : md5str,
+			"ssdeep" : ssdeepstr,
+		}
+		if debug:
+			print "sub_%08x %s %s" % (function, md5str, ssdeepstr) # DEBUG
+
+	if dump: # save hash table in dump mode
+		fd = open("./%s/%s.pickle" % (dumpdir, "hashes"), "w")
+		pickle.dump(hashes, fd)
+		fd.close()
+	return hashes
+
 
 def getFunctionCode(funcAddress):
+	"""
+		Start from a function address
+		and return function code
+	"""
 	# retrieve function code as string
 	funcCodeStr = ""
 	chunks = Chunks(funcAddress)
 	for [start, end] in chunks:
-		print ("DEBUGS CHUNK: %s -> %s" % (start, end))
+		if debug:
+			print ("DEBUGS CHUNK: %s -> %s" % (start, end))
 		for ea in FuncItems(start):
 			instrs = GetDisasm(ea)
-			funcCodeStr += instrs
+			funcCodeStr += "%s\n" % instrs
+
+	if dump: # save function code in dump mode
+		fd = open("./%s/%s.asm" % (dumpdir, funcAddress), "w")
+		fd.write(funcCodeStr)
+		fd.close()
 	return funcCodeStr
 
+
+def cleanUpCode(codeStr):
+	"""
+		For an instruction, remove references
+
+		Require to make intelligent comparison
+		idepentetly of offset, addresses...
+	"""
+	
+	return codeStr
+
+
+# --------------------------------------------------------------------------- #
 def main():
+	"""
+		Test / DEBUG function!
+	"""
 	print "IDA PYTHON PLUGIN STARTED!!"
-	print "DEBUG: %s" % sys.executable
-	print "%s" % sys.path
+	if debug:
+		print "DEBUG: %s" % sys.executable
+		print "%s" % sys.path
+
+	# create output directory
+	if dump:
+		if not os.path.exists("./%s" % dumpdir):
+			os.makedirs("./%s" % dumpdir)
 
 	# TEST
 	getPerFunctionHash()
-
 
 if __name__ == "__main__":
     main()
