@@ -21,21 +21,22 @@
 #  - extract fucnction without offset for comparison of samples
 #  - ..
 #
+#
 __author__ = 'David DURVAUX'
 __contact__ = 'david@autopsit.org'
 __version__ = '0.01'
 
 # Imports required by this tool
-import argparse
 import os
+import sys
+import json
 import pefile
 import peutils
-import sys
+import argparse
 from distorm3 import Decode, Decode16Bits, Decode32Bits, Decode64Bits, Decompose, DecomposeGenerator, DF_STOP_ON_FLOW_CONTROL
 
 # Imports part of this tool
 import static.vivframework
-
 
 # --------------------------------------------------------------------------- #
 # REPRESENTATION OF THE CONFIGURATION
@@ -55,14 +56,37 @@ class Configuration:
 	def __init__(self):
 		return
 
-	def save(self, filename="./.config"):
-		print ("NOT YET IMPLEMENTED!")
+	def save(self, filename="./config.json"):
+		config = {
+			"force": self.force,
+			"modstatic": self.modstatic,
+			"moddynamic": self.moddynamic
+		}
+		try:
+			# write configuration to file
+			fd = open(filename, "w")
+			json.dump(config, fd)
+			fd.close()
+			print("Configuration saved to %s" % filename)
+		except Exception as e:
+			print("Impossible to save configuration to %s" % filename)
+			print(e)
 		return
 
-	def load(self, filename="./config"):
-		print ("NOT YET IMPLEMENTED!")
-		return
+	def load(self, filename="./config.json"):
+		config = {}
+		try:
+			# read configuration from file
+			fd = open(filename, "r")
+			config = json.load(fd)
+			fd.close()
 
+			# update internal state
+			self.__dict__[key] = config[key]
+		except Exception as e:
+			print("Impossible to load configuration from %s" % filename)
+			print(e)
+		return
 
 # --------------------------------------------------------------------------- #
 # REPRESENTATION OF THE INFO RETRIEVED
@@ -149,6 +173,7 @@ class StaticAnalysis:
 			"packed_score" : self.packed_score
 		}
 
+
 	# CHECK BINARY SECTIONS
 	def analyzeSections(self):
 		"""
@@ -194,6 +219,7 @@ class StaticAnalysis:
 		print ("TOTAL PACKED SCORE: %s / %s" % (self.bininfo.packed_score, self.bininfo.packed_test))
 		return self.bininfo
 
+
 	def callPEiD(self):
 		"""
 			Use set of YARA rules to search for known packers
@@ -207,21 +233,26 @@ class StaticAnalysis:
 				print "PACKER FOUND: %s" % matches[0]
 		return self.bininfo
 
+
 	def graphSearch(self):
 		"""
 			Do a graph search in the code for leaf nodes
 		"""
 		self.configuration.modstatic.graphSearch()
 
+
 	def isAntiDebug(self):
 		if self.configuration.modstatic.isAntiDebug():
 			print "WARNING: ANTI-DEBUGGING TRICKS FOUND!"
 
+
 	def searchVirtualAlloc(self):
 		self.configuration.modstatic.searchVirtualAlloc()
 
+
 	def getPerFunctionHash(self):
 		self.configuration.modstatic.getPerFunctionHash()
+
 		
 	def decompile(self):
 		"""
@@ -254,10 +285,7 @@ def start_analysis(binary, configuration):
 	sa.isAntiDebug()
 	sa.searchVirtualAlloc()
 
-
-
 	sa.getPerFunctionHash() #TEST
-
 	#sa.decompile() # TEST
 	return
 
@@ -286,6 +314,10 @@ def main():
 		else:
 			print "ERROR: %s not found!" % args.yara
 			exit()
+
+	# TEST - save configuration for re-use
+	#configuration.save()
+	configuration.load()
 
 	# set Vivisect path and Initialize
 	# currently only vivisect is supported

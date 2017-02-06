@@ -14,10 +14,13 @@ import os
 import hashlib
 
 class Vivisect:
+	debug = True
 	binary = None
 	bininfo = None
 	force = False
 	vw = None
+
+
 
 	def __init__(self, binary, bininfo, force=False):
 		self.binary = binary
@@ -47,7 +50,8 @@ class Vivisect:
 		"""
 		# search for EIP and loop on all of them
 		for eip in self.vw.getEntryPoints():
-			print("FOUND ENTRY POINT 0x%08x\n" % eip)
+			if self.debug:
+				print("FOUND ENTRY POINT 0x%08x\n" % eip)
 
 			# build a code graph starting at EIP
 			graph = viv_cgh.buildFunctionGraph(self.vw, eip)
@@ -55,7 +59,8 @@ class Vivisect:
 
 			for node in graph.getNodes():
 				if(node in visited):
-					print("LOOP DETECTED in CODE -- ignoring path!")
+					if self.debug:
+						print("LOOP DETECTED in CODE -- ignoring path!")
 					break
 				else:
 					visited.append(node)

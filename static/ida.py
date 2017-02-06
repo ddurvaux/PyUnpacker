@@ -116,11 +116,11 @@ def cleanUpCode(funcAddress, codeStr):
 	"""
 	# Code pattern and their generic replacement	
 	patterns = {
-		#    PATTERN         REPLACEMENT
-		"\[\w{3}\+.*\]"    :   "[VAR]" ,   # mov     ecx, [ebp+arg_8]
-		"offset off_\d+"   :   "OFFSET",   # mov     ebx, offset off_419940
-		"loc_\d+"          :   "LOC"   ,   # jz      short loc_406470
-		";\s+\w+(\s+\*)?"  :   ""      ,   # remove  comments
+		#    PATTERN          REPLACEMENT
+		"\[\w{3}\+.*\]"    :   "[VAR]"    ,   # mov     ecx, [ebp+arg_8]
+		"offset off_\d+"   :   "OFFSET"   ,   # mov     ebx, offset off_419940
+		"loc_\d+"          :   "LOC"      ,   # jz      short loc_406470
+		";\s+\w+(\s+\*)?"  :   ""         ,   # remove  comments
 	}
 	for pattern in patterns.keys():
 		replacement = patterns[pattern]
