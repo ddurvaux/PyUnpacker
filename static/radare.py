@@ -1,10 +1,21 @@
+import json
+import r2pipe
 
 class Radare2:
-	debug = True
+
+	"""
+		import r2pipe	
+
+		r2 = r2pipe.open("/bin/ls")
+		r2.cmd('aa')
+		print(r2.cmd("afl"))
+		print(r2.cmdj("aflj"))  # evaluates JSONs and returns an object
+	"""
+	debug = False
 	binary = None
 	bininfo = None
 	force = False
-
+	r2 = None
 
 
 	def __init__(self, binary, bininfo, force=False):
@@ -12,8 +23,29 @@ class Radare2:
 		self.bininfo = bininfo
 		self.force = force
 
+		# open binary in Radare2 and trigger binary analysis
+		self.r2 = r2pipe.open(self.binary)
+		self.r2.cmd('aaa')  # analyze all referenced code
+
 		# done
 		return
+
+
+	def __get_functions__(self):
+		flist = self.r2.cmdj("aflj")
+
+		if self.debug:
+			print("DEBUG: List of function (JSON query / %s)=\n%s" % (type(flist), flist))
+			try:
+				fd = open("/Users/david/Workspace/malwares/netwars/function_list.json", "w")
+				json.dump(flist, fd, sort_keys=True, indent=4, separators=(',', ': '))
+				fd.close()
+			except Exception as e:
+				print("Impossible to save JSON file")
+				print(e)
+
+		return flist # DEBUG - CHANGEME
+
 
 	def graphSearch(self):
 		"""
@@ -101,4 +133,16 @@ class Radare2:
 			TODO EXTEND + IMPROVE!
 		"""
 		return None
+
+
+#DEBUG / TEST
+def main():
+	radare = Radare2("/Users/david/Workspace/malwares/netwars/b.exe", None)
+	functions = radare.__get_functions__()
+	for function in functions:
+		fname = function["name"]
+		print(fname)
+
+if __name__ == "__main__":
+	main()
 
